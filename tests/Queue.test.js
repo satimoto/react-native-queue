@@ -715,7 +715,8 @@ describe('Models/Queue', function () {
       onSuccess: workerOptions.onSuccess,
       onFailure: null,
       onFailed: null,
-      onComplete: null
+      onComplete: null,
+      onDelete: null
     });
 
     queue.removeWorker('job-name');
