@@ -35,7 +35,7 @@ export default class Worker {
     // Validate input.
     if (!jobName || !worker) {
       throw new Error(
-        "Job name and associated worker function must be supplied."
+        'Job name and associated worker function must be supplied.'
       );
     }
 
@@ -77,7 +77,7 @@ export default class Worker {
     // If no worker assigned to job name, throw error.
     if (!Worker.workers[jobName]) {
       throw new Error(
-        "Job " + jobName + " does not have a worker assigned to it."
+        'Job ' + jobName + ' does not have a worker assigned to it.'
       );
     }
 
@@ -97,7 +97,7 @@ export default class Worker {
     // If no worker assigned to job name, throw error.
     if (!Worker.workers[job.name]) {
       throw new Error(
-        "Job " + job.name + " does not have a worker assigned to it."
+        'Job ' + job.name + ' does not have a worker assigned to it.'
       );
     }
 
@@ -113,11 +113,11 @@ export default class Worker {
         setTimeout(() => {
           reject(
             new Error(
-              "TIMEOUT: Job id: " +
-                jobId +
-                " timed out in " +
-                jobTimeout +
-                "ms."
+              'TIMEOUT: Job id: ' +
+              jobId +
+              ' timed out in ' +
+              jobTimeout +
+              'ms.'
             )
           );
         }, jobTimeout);
@@ -144,15 +144,15 @@ export default class Worker {
   async executeJobLifecycleCallback(callbackName, jobName, jobId, jobPayload) {
     // Validate callback name
     const validCallbacks = [
-      "onStart",
-      "onSuccess",
-      "onFailure",
-      "onFailed",
-      "onComplete",
-      "onDelete"
+      'onStart',
+      'onSuccess',
+      'onFailure',
+      'onFailed',
+      'onComplete',
+      'onDelete'
     ];
     if (!validCallbacks.includes(callbackName)) {
-      throw new Error("Invalid job lifecycle callback name.");
+      throw new Error('Invalid job lifecycle callback name.');
     }
 
     // Fire job lifecycle callback if set.

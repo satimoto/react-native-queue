@@ -6,14 +6,14 @@
 import should from 'should'; // eslint-disable-line no-unused-vars
 import Worker from '../Models/Worker';
 
-describe('Models/Worker', function() {
+describe('Models/Worker', function () {
 
   it('#addWorker() should validate input', async () => {
 
     const worker = new Worker();
 
     try {
-      worker.addWorker(null, async () => {});
+      worker.addWorker(null, async () => { });
       throw new Error('worker.addWorker() should throw error if no jobname supplied.');
     } catch (error) {
       error.should.deepEqual(new Error('Job name and associated worker function must be supplied.'));
@@ -32,13 +32,13 @@ describe('Models/Worker', function() {
 
     const worker = new Worker();
 
-    worker.addWorker('test-job-one', async () => {});
+    worker.addWorker('test-job-one', async () => { });
 
     const workerOptions = {
       concurrency: 3,
-      onStart: async () => {}
+      onStart: async () => { }
     };
-    worker.addWorker('test-job-two', async () => {}, workerOptions);
+    worker.addWorker('test-job-two', async () => { }, workerOptions);
 
     // first worker is added with default options.
     Worker.workers['test-job-one'].should.be.a.Function();
@@ -48,7 +48,8 @@ describe('Models/Worker', function() {
       onSuccess: null,
       onFailure: null,
       onFailed: null,
-      onComplete: null
+      onComplete: null,
+      onDelete: null
     });
 
     // second worker is added with new concurrency option.
@@ -59,7 +60,8 @@ describe('Models/Worker', function() {
       onSuccess: null,
       onFailure: null,
       onFailed: null,
-      onComplete: null
+      onComplete: null,
+      onDelete: null
     });
 
   });
@@ -69,14 +71,14 @@ describe('Models/Worker', function() {
     const worker = new Worker();
 
     // Add workers.
-    worker.addWorker('test-job-one', async () => {});
+    worker.addWorker('test-job-one', async () => { });
 
     const workerOptions = {
       concurrency: 3
     };
-    worker.addWorker('test-job-two', async () => {}, workerOptions);
+    worker.addWorker('test-job-two', async () => { }, workerOptions);
 
-    worker.addWorker('test-job-three', async () => {});
+    worker.addWorker('test-job-three', async () => { });
 
     Object.keys(Worker.workers).should.deepEqual(['test-job-one', 'test-job-two', 'test-job-three']);
 
@@ -108,7 +110,7 @@ describe('Models/Worker', function() {
     const workerOptions = {
       concurrency: 36
     };
-    worker.addWorker('test-job-one', async () => {}, workerOptions);
+    worker.addWorker('test-job-one', async () => { }, workerOptions);
 
     worker.getConcurrency('test-job-one').should.equal(36);
 
@@ -121,7 +123,7 @@ describe('Models/Worker', function() {
     const jobName = 'this-worker-does-not-exist';
 
     try {
-      await worker.executeJob({ name : jobName });
+      await worker.executeJob({ name: jobName });
       throw new Error('execute job should have thrown an error due to no worker assigned to that job name.');
     } catch (error) {
       error.should.deepEqual(new Error('Job ' + jobName + ' does not have a worker assigned to it.'));
@@ -163,7 +165,7 @@ describe('Models/Worker', function() {
       await worker.executeJob(job);
       throw new Error('execute job should have thrown an error due to timeout.');
     } catch (error) {
-      error.should.deepEqual(new Error('TIMEOUT: Job id: ' + job.id + ' timed out in ' + jobTimeout  + 'ms.'));
+      error.should.deepEqual(new Error('TIMEOUT: Job id: ' + job.id + ' timed out in ' + jobTimeout + 'ms.'));
     }
 
   });
@@ -231,7 +233,7 @@ describe('Models/Worker', function() {
 
     const worker = new Worker();
 
-    worker.addWorker('test-job-one', async () => {}, {
+    worker.addWorker('test-job-one', async () => { }, {
       onStart: (id, payload) => {
 
         onStartCalled = true;
@@ -282,7 +284,7 @@ describe('Models/Worker', function() {
 
     const worker = new Worker();
 
-    worker.addWorker('test-job-one', async () => {}, {
+    worker.addWorker('test-job-one', async () => { }, {
       onStart: () => {
 
         testPassed = false;
@@ -336,7 +338,7 @@ describe('Models/Worker', function() {
 
     const worker = new Worker();
 
-    worker.addWorker('test-job-one', async () => {}, {
+    worker.addWorker('test-job-one', async () => { }, {
       onStart: () => {
 
         onStartCalled = true;
