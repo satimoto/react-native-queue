@@ -7,6 +7,8 @@ import should from 'should'; // eslint-disable-line no-unused-vars
 import QueueFactory, { Queue } from '../Models/Queue';
 import Worker from '../Models/Worker';
 
+const delay = ms => new Promise(res => setTimeout(res, ms));
+
 describe('Models/Queue', function () {
 
   beforeEach(async () => {
@@ -1592,6 +1594,35 @@ describe('Models/Queue', function () {
 
   });
 
+  it('#deleteJob() requires job id at minimum', async () => {
+
+    const queue = await QueueFactory();
+
+    try {
+      await queue.deleteJob();
+      throw new Error('Job with no name should have thrown error.');
+    } catch (error) {
+      error.should.deepEqual(new Error('Job ID must be supplied.'));
+    }
+
+  });
+
+  it('#deleteJob(jobId) does not bother with delete query if no jobs exist already.', async () => {
+
+    const queue = await QueueFactory();
+
+    // Mock queue.realm.delete() so we can test that it has not been called.
+    let hasDeleteBeenCalled = false;
+    queue.realm.delete = () => {
+      hasDeleteBeenCalled = true; // Switch flag if function gets called.
+    };
+
+    queue.deleteJob('no-jobs-exist-for-this-job-name');
+
+    hasDeleteBeenCalled.should.be.False();
+
+  });
+
   ////
   //// JOB LIFECYCLE CALLBACK TESTING
   ////
@@ -1646,6 +1677,46 @@ describe('Models/Queue', function () {
     testFailed.should.equal(false);
 
   });
+
+  it('onDelete lifecycle callback fires before job begins processing.', async () => {
+
+    // This test will intermittently fail in CI environments like travis-ci.
+    // Intermittent failure is a result of the poor performance of CI environments
+    // causing the timeouts in this test to become really flakey (setTimeout can't
+    // guarantee exact time of function execution, and in a high load env execution can
+    // be significantly delayed.
+    if (process.env.COVERALLS_ENV == 'production') {
+      return true;
+    }
+
+    const queue = await QueueFactory();
+    queue.flushQueue();
+    const jobName = 'job-name';
+    let testFailed = true;
+
+    // Create a job
+    queue.createJob(jobName, { random: 'this is 1st random data' }, {}, false);
+    const id = queue.createJob(jobName, { random: 'this is 1st random data' }, {}, false);
+
+    queue.addWorker(jobName, async () => {
+
+      await delay(2);
+
+    }, {
+      onDelete: () => {
+
+        // If onDelete runs after job has been deleted, test passes.
+        testFailed = false;
+      }
+    });
+
+    testFailed.should.equal(true);
+    await queue.start();
+    queue.deleteJob(id);
+    testFailed.should.equal(false);
+
+  });
+
 
   it('onSuccess, onComplete lifecycle callbacks fire after job begins processing.', async () => {
 
