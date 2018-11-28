@@ -390,6 +390,11 @@ export class Queue {
 
       // If job has failed all attempts execute job onFailed and onComplete lifecycle callbacks.
       if (jobData.failedAttempts >= jobData.attempts) {
+        // On unsuccessful job completion, remove job
+        this.realm.write(() => {
+          this.realm.delete(job);
+        });
+
         this.worker.executeJobLifecycleCallback(
           'onFailed',
           jobName,
