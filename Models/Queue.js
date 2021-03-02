@@ -6,10 +6,10 @@
  *
  */
 
-import Database from '../config/Database';
-import uuid from 'react-native-uuid';
-import Worker from './Worker';
-import promiseReflect from 'promise-reflect';
+import Database from "../config/Database";
+import uuid from "react-native-uuid";
+import Worker from "./Worker";
+import promiseReflect from "promise-reflect";
 
 export class Queue {
   /**
@@ -21,7 +21,7 @@ export class Queue {
   constructor() {
     this.realm = null;
     this.worker = new Worker();
-    this.status = 'inactive';
+    this.status = "inactive";
   }
 
   /**
@@ -81,36 +81,35 @@ export class Queue {
    */
   createJob(name, payload = {}, options = {}, startQueue = true) {
     if (!name) {
-      throw new Error('Job name must be supplied.');
+      throw new Error("Job name must be supplied.");
     }
 
     // Validate options
     if (options.timeout < 0 || options.attempts < 0) {
-      throw new Error('Invalid job option.');
+      throw new Error("Invalid job option.");
     }
 
     const id = uuid.v4();
     this.realm.write(() => {
-      this.realm.create('Job', {
+      this.realm.create("Job", {
         id,
         name,
         payload: JSON.stringify(payload),
         data: JSON.stringify({
-          attempts: options.attempts || 1
+          attempts: options.attempts || 1,
         }),
         priority: options.priority || 0,
         active: false,
         timeout: options.timeout >= 0 ? options.timeout : 25000,
         created: new Date(),
-        failed: null
+        failed: null,
       });
     });
 
     // Start queue on job creation if it isn't running by default.
-    if (startQueue && this.status == 'inactive') {
+    if (startQueue && this.status == "inactive") {
       this.start();
     }
-
     return id;
   }
 
@@ -139,11 +138,11 @@ export class Queue {
    */
   async start(lifespan = 0) {
     // If queue is already running, don't fire up concurrent loop.
-    if (this.status == 'active') {
+    if (this.status == "active") {
       return false;
     }
 
-    this.status = 'active';
+    this.status = "active";
 
     // Get jobs to process
     const startTime = Date.now();
@@ -158,9 +157,9 @@ export class Queue {
       concurrentJobs = await this.getConcurrentJobs();
     }
 
-    while (this.status == 'active' && concurrentJobs.length) {
+    while (this.status == "active" && concurrentJobs.length) {
       // Loop over jobs and process them concurrently.
-      const processingJobs = concurrentJobs.map(job => {
+      const processingJobs = concurrentJobs.map((job) => {
         return this.processJob(job);
       });
 
@@ -178,7 +177,7 @@ export class Queue {
       }
     }
 
-    this.status = 'inactive';
+    this.status = "inactive";
   }
 
   /**
@@ -190,7 +189,7 @@ export class Queue {
    *
    */
   stop() {
-    this.status = 'inactive';
+    this.status = "inactive";
   }
 
   /**
@@ -204,12 +203,12 @@ export class Queue {
     if (sync) {
       let jobs = null;
       this.realm.write(() => {
-        jobs = this.realm.objects('Job');
+        jobs = this.realm.objects("Job");
       });
 
       return jobs;
     } else {
-      return await this.realm.objects('Job');
+      return await this.realm.objects("Job");
     }
   }
 
@@ -240,16 +239,16 @@ export class Queue {
         queueLifespanRemaining - 500 > 0 ? queueLifespanRemaining - 499 : 0; // Only get jobs with timeout at least 500ms < queueLifespanRemaining.
 
       const initialQuery = queueLifespanRemaining
-        ? 'active == FALSE AND failed == null AND timeout > 0 AND timeout < ' +
+        ? "active == FALSE AND failed == null AND timeout > 0 AND timeout < " +
           timeoutUpperBound
-        : 'active == FALSE AND failed == null';
+        : "active == FALSE AND failed == null";
 
       let jobs = this.realm
-        .objects('Job')
+        .objects("Job")
         .filtered(initialQuery)
         .sorted([
-          ['priority', true],
-          ['created', false]
+          ["priority", true],
+          ["created", false],
         ]);
 
       if (jobs.length) {
@@ -270,11 +269,11 @@ export class Queue {
             '" AND active == FALSE AND failed == null';
 
         const allRelatedJobs = this.realm
-          .objects('Job')
+          .objects("Job")
           .filtered(allRelatedJobsQuery)
           .sorted([
-            ['priority', true],
-            ['created', false]
+            ["priority", true],
+            ["created", false],
           ]);
 
         let jobsToMarkActive = allRelatedJobs.slice(0, concurrency);
@@ -282,23 +281,23 @@ export class Queue {
         // Grab concurrent job ids to reselect jobs as marking these jobs as active will remove
         // them from initial selection when write transaction exits.
         // See: https://stackoverflow.com/questions/47359368/does-realm-support-select-for-update-style-read-locking/47363356#comment81772710_47363356
-        const concurrentJobIds = jobsToMarkActive.map(job => job.id);
+        const concurrentJobIds = jobsToMarkActive.map((job) => job.id);
 
         // Mark concurrent jobs as active
-        jobsToMarkActive = jobsToMarkActive.map(job => {
+        jobsToMarkActive = jobsToMarkActive.map((job) => {
           job.active = true;
         });
 
         // Reselect now-active concurrent jobs by id.
         const reselectQuery = concurrentJobIds
-          .map(jobId => 'id == "' + jobId + '"')
-          .join(' OR ');
+          .map((jobId) => 'id == "' + jobId + '"')
+          .join(" OR ");
         const reselectedJobs = this.realm
-          .objects('Job')
+          .objects("Job")
           .filtered(reselectQuery)
           .sorted([
-            ['priority', true],
-            ['created', false]
+            ["priority", true],
+            ["created", false],
           ]);
 
         concurrentJobs = reselectedJobs.slice(0, concurrency);
@@ -333,7 +332,7 @@ export class Queue {
 
     // Fire onStart job lifecycle callback
     this.worker.executeJobLifecycleCallback(
-      'onStart',
+      "onStart",
       jobName,
       jobId,
       jobPayload
@@ -349,13 +348,13 @@ export class Queue {
 
       // Job has processed successfully, fire onSuccess and onComplete job lifecycle callbacks.
       this.worker.executeJobLifecycleCallback(
-        'onSuccess',
+        "onSuccess",
         jobName,
         jobId,
         jobPayload
       );
       this.worker.executeJobLifecycleCallback(
-        'onComplete',
+        "onComplete",
         jobName,
         jobId,
         jobPayload
@@ -392,7 +391,7 @@ export class Queue {
 
       // Execute job onFailure lifecycle callback.
       this.worker.executeJobLifecycleCallback(
-        'onFailure',
+        "onFailure",
         jobName,
         jobId,
         jobPayload
@@ -400,14 +399,19 @@ export class Queue {
 
       // If job has failed all attempts execute job onFailed and onComplete lifecycle callbacks.
       if (jobData.failedAttempts >= jobData.attempts) {
+        // On unsuccessful job completion, remove job
+        this.realm.write(() => {
+          this.realm.delete(job);
+        });
+
         this.worker.executeJobLifecycleCallback(
-          'onFailed',
+          "onFailed",
           jobName,
           jobId,
           jobPayload
         );
         this.worker.executeJobLifecycleCallback(
-          'onComplete',
+          "onComplete",
           jobName,
           jobId,
           jobPayload
@@ -429,7 +433,7 @@ export class Queue {
     if (jobName) {
       this.realm.write(() => {
         let jobs = this.realm
-          .objects('Job')
+          .objects("Job")
           .filtered('name == "' + jobName + '"');
 
         if (jobs.length) {
@@ -441,6 +445,40 @@ export class Queue {
         this.realm.deleteAll();
       });
     }
+  }
+
+  /**
+   *
+   * Delete a specific job in the queue.
+   *
+   * If jobId is supplied, only the job associated with that id
+   * will be deleted. Otherwise any job in queue will be deleted.
+   *
+   * @param jobId {string} - ID associated with a specific job.
+   */
+  deleteJob(jobId) {
+    if (!jobId) {
+      throw new Error("Job ID must be supplied.");
+    }
+
+    this.realm.write(() => {
+      let jobs = this.realm.objects("Job").filtered('id == "' + jobId + '"');
+
+      if (jobs.length) {
+        const job = jobs[0];
+        const jobName = job.name;
+        const jobId = job.id;
+        const jobPayload = JSON.parse(job.payload);
+
+        this.realm.delete(jobs);
+        this.worker.executeJobLifecycleCallback(
+          "onDelete",
+          jobName,
+          jobId,
+          jobPayload
+        );
+      }
+    });
   }
 }
 

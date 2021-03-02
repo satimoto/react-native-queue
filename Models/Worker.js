@@ -5,7 +5,6 @@
  */
 
 export default class Worker {
-
   /**
    *
    * Singleton map of all worker functions assigned to queue.
@@ -33,10 +32,11 @@ export default class Worker {
    * @param options {object} - Worker options. See README.md for worker options info.
    */
   addWorker(jobName, worker, options = {}) {
-
     // Validate input.
     if (!jobName || !worker) {
-      throw new Error('Job name and associated worker function must be supplied.');
+      throw new Error(
+        'Job name and associated worker function must be supplied.'
+      );
     }
 
     // Attach options to worker
@@ -46,7 +46,8 @@ export default class Worker {
       onSuccess: options.onSuccess || null,
       onFailure: options.onFailure || null,
       onFailed: options.onFailed || null,
-      onComplete: options.onComplete || null
+      onComplete: options.onComplete || null,
+      onDelete: options.onDelete || null
     };
 
     Worker.workers[jobName] = worker;
@@ -73,14 +74,14 @@ export default class Worker {
    * @return {number}
    */
   getConcurrency(jobName) {
-
     // If no worker assigned to job name, throw error.
     if (!Worker.workers[jobName]) {
-      throw new Error('Job ' + jobName + ' does not have a worker assigned to it.');
+      throw new Error(
+        'Job ' + jobName + ' does not have a worker assigned to it.'
+      );
     }
 
     return Worker.workers[jobName].options.concurrency;
-
   }
 
   /**
@@ -93,10 +94,11 @@ export default class Worker {
    * @param job {object} - Job realm model object
    */
   async executeJob(job) {
-
     // If no worker assigned to job name, throw error.
     if (!Worker.workers[job.name]) {
-      throw new Error('Job ' + job.name + ' does not have a worker assigned to it.');
+      throw new Error(
+        'Job ' + job.name + ' does not have a worker assigned to it.'
+      );
     }
 
     // Data must be cloned off the realm job object for the timeout logic promise race.
@@ -107,21 +109,27 @@ export default class Worker {
     const jobPayload = JSON.parse(job.payload);
 
     if (jobTimeout > 0) {
-
       let timeoutPromise = new Promise((resolve, reject) => {
-
         setTimeout(() => {
-          reject(new Error('TIMEOUT: Job id: ' + jobId + ' timed out in ' + jobTimeout  + 'ms.'));
+          reject(
+            new Error(
+              'TIMEOUT: Job id: ' +
+              jobId +
+              ' timed out in ' +
+              jobTimeout +
+              'ms.'
+            )
+          );
         }, jobTimeout);
-
       });
 
-      await Promise.race([timeoutPromise, Worker.workers[jobName](jobId, jobPayload)]);
-
+      await Promise.race([
+        timeoutPromise,
+        Worker.workers[jobName](jobId, jobPayload)
+      ]);
     } else {
       await Worker.workers[jobName](jobId, jobPayload);
     }
-
   }
 
   /**
@@ -134,9 +142,15 @@ export default class Worker {
    * @param jobPayload {object} - Data payload associated with job.
    */
   async executeJobLifecycleCallback(callbackName, jobName, jobId, jobPayload) {
-
     // Validate callback name
-    const validCallbacks = ['onStart', 'onSuccess', 'onFailure', 'onFailed', 'onComplete'];
+    const validCallbacks = [
+      'onStart',
+      'onSuccess',
+      'onFailure',
+      'onFailed',
+      'onComplete',
+      'onDelete'
+    ];
     if (!validCallbacks.includes(callbackName)) {
       throw new Error('Invalid job lifecycle callback name.');
     }
@@ -144,15 +158,11 @@ export default class Worker {
     // Fire job lifecycle callback if set.
     // Uses a try catch statement to gracefully degrade errors in production.
     if (Worker.workers[jobName].options[callbackName]) {
-
       try {
         await Worker.workers[jobName].options[callbackName](jobId, jobPayload);
       } catch (error) {
         console.error(error); // eslint-disable-line no-console
       }
-
     }
-
   }
-
 }
